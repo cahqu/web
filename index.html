@@ -2315,8 +2315,8 @@ background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:cen
     </style>
 
     <!-- Bullet list cakep -->
-    <ul class="juz-list"><li>Level 1: <strong>1,5</strong> Juz</li>
-<li>Level 2: <strong>2,5</strong> Juz</li>
+    <ul class="juz-list"><li>Level 1: <strong>2</strong> Juz</li>
+<li>Level 2: <strong>2</strong> Juz</li>
 <li>Level 3: <strong>3</strong> Juz</li>
 <li>Level 4: <strong>3</strong> Juz</li>
 <li>Level 5: <strong>3</strong> Juz</li>
@@ -2550,8 +2550,8 @@ background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:cen
       #murRangeOverlay .juz-list strong{ font-variant-numeric:tabular-nums; }
     </style>
 
-    <ul class="juz-list"><li>Level 1: <strong>1,5</strong> Juz</li>
-<li>Level 2: <strong>2,5</strong> Juz</li>
+    <ul class="juz-list"><li>Level 1: <strong>2</strong> Juz</li>
+<li>Level 2: <strong>2</strong> Juz</li>
 <li>Level 3: <strong>3</strong> Juz</li>
 <li>Level 4: <strong>3</strong> Juz</li>
 <li>Level 5: <strong>3</strong> Juz</li>
@@ -2606,7 +2606,7 @@ background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:cen
 
   // === Fungsi atur dropdown kelas ===
 function aturDropdownKelas(user) {
-  const semuaKelas = [  "kelas_000000","kelas_012025","kelas_022025","kelas_032025","kelas_042025","kelas_052025"];
+  const semuaKelas = [  "kelas_012025","kelas_022025","kelas_032025","kelas_042025","kelas_052025"];
 
   const namaKelasCustom = {  kelas_012025: "Ustadzah Choirunisa Nurlayli",
   kelas_022025: "Ustadzah Zatifa Nur Fitri",
@@ -6144,7 +6144,7 @@ async function xlsRekapDownload(){
     return out.length ? out.join(', ') : '-';
   }
   function PDF_percentCapaian(totalJuzNum, semester){
-    const batasSemester = {1: 1, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
+    const batasSemester = {1: 2, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
     const total = Number(totalJuzNum);
     const sem   = Number(semester);
     if (!Number.isFinite(total)) return 0;
@@ -7014,7 +7014,7 @@ async function hitungTotalAllJuzFromTable() {
       rekap[key].totalJuz += readTotalJuz(item);
     });
 
-    const batasSemester = {1: 1, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
+    const batasSemester = {1: 2, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
     const defaultTarget = 30;
 
     const dataToSave = [];
@@ -7161,7 +7161,7 @@ async function hitungTotalAllJuzOtomatis() {
       rekap[key].totalJuz += readTotalJuz(item);
     });
 
-    const batasSemester = {1: 1, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
+    const batasSemester = {1: 2, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
     const defaultTarget = 30;
 
     rowsArr.forEach(row => {
@@ -8312,7 +8312,7 @@ if (window.currentRowEl){
     else { s=s.replace(/,/g,""); }
     const n = parseFloat(s); return Number.isFinite(n)?n:0;
   };
-  const BATAS = {1: 1, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
+  const BATAS = {1: 2, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
   const LS_KEY = k => `murRange:${k}`;
 
   function getSantriTable(){
