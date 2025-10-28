@@ -10744,7 +10744,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 <script>
-/* === [GRAFIK PROSENTASE THMS — PER HALAQOH + CACHING PER TANGGAL (PERMANEN) + REFRESH] === */
+/* === [GRAFIK PROSENTASE THMS — PER HALAQOH + CACHING PER TANGGAL (PERMANEN) + REFRESH + PDF] === */
 (function grafikTHMS_boot(){
   // ---- util: tunggu DOM siap
   function onReady(fn){
@@ -10769,15 +10769,23 @@ document.addEventListener("DOMContentLoaded", () => {
   function initGrafikTHMS(){
     const wrap = document.querySelector('.pdf-rekap-controls');
     if (!wrap) return console.warn('[THMS] .pdf-rekap-controls tidak ditemukan');
-    if (document.getElementById('btn-graph-thms')) return;
+    if (document.getElementById('btn-graph-thms')) return; // cegah duplikat
 
-    // ===== Tombol pemicu
+    // ===== Tombol pemicu (Overlay)
     const btn = document.createElement('button');
     btn.id = 'btn-graph-thms';
     btn.className = 'rekap-btn';
     btn.style.background = '#16a34a';
     btn.textContent = 'Grafik Prosentase';
     wrap.appendChild(btn);
+
+    // ===== Tombol PDF
+    const btnPdf = document.createElement('button');
+    btnPdf.id = 'btn-graph-thms-pdf';
+    btnPdf.className = 'rekap-btn';
+    btnPdf.style.background = '#0ea5e9';
+    btnPdf.textContent = 'PDF Grafik';
+    wrap.appendChild(btnPdf);
 
     // ===== Style overlay (center)
     if (!document.getElementById('thms-ov-style')) {
@@ -10809,6 +10817,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .thms-progress{height:8px;background:#f3f4f6;border-radius:999px;overflow:hidden;margin-top:6px}
         .thms-progress > span{display:block;height:100%;background:#3b82f6}
         .thms-cache-flag{font-size:11px;color:#059669;font-weight:700;margin-left:6px}
+        .thms-hide{position:absolute;left:-99999px;top:-99999px;width:960px;height:280px;pointer-events:none;opacity:0}
       `;
       document.head.appendChild(s);
     }
@@ -10832,7 +10841,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <div id="thmsSub" class="thms-sub"></div>
             </div>
             <div class="thms-actions">
-              <button id="thmsRefresh" class="thms-btn thms-refresh" title="Perbarui data untuk tanggal ini">Refresh Data</button>
+              <button id="thmsRefresh" class="thms-btn thms-refresh" title="Perbarui data untuk tanggal ini">Perbaharui</button>
               <button id="thmsClose" class="thms-btn thms-close">Tutup</button>
             </div>
           </div>
@@ -10869,8 +10878,17 @@ document.addEventListener("DOMContentLoaded", () => {
         document.head.appendChild(s);
       });
     }
+    async function ensureJsPDF(){
+      if (window.jspdf?.jsPDF) return;
+      await new Promise((res, rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
+        s.onload=res; s.onerror=()=>rej(new Error('Gagal memuat jsPDF'));
+        document.head.appendChild(s);
+      });
+    }
 
-    // ====== Caching helpers — PERMANEN per rentang tanggal (tidak pakai TTL, tidak ikut roster)
+    // ====== Caching helpers — PERMANEN per rentang tanggal (tidak pakai TTL)
     const CACHE_NS = 'THMS_GRAPH_V6KEY';
     function fingerprintKeys(keys){ return keys.slice().map(String).sort().join('|'); }
     function makeBaseKey(start, end, kelasKeys){ return `${CACHE_NS}|${start}|${end}|${fingerprintKeys(kelasKeys)}`; }
@@ -10879,7 +10897,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const raw = localStorage.getItem(`${baseKey}|${mode}`);
         if (!raw) return null;
         const obj = JSON.parse(raw);
-        return (obj && obj.payload) ? obj.payload : null; // tanpa TTL
+        return (obj && obj.payload) ? obj.payload : null;
       }catch(e){ return null; }
     }
     function cacheSave(baseKey, mode, payload){
@@ -10913,18 +10931,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ===== Label kelas (ustadz)
-    function getKelasLabel(kelasKey){
+    function getKelasLabel(k){
       const el = (typeof kelasSelect !== 'undefined' && kelasSelect)
                ? kelasSelect
                : (document.getElementById('kelasSelect') || document.getElementById('kelas'));
-      const opt = el ? [...el.options].find(o=>o.value===kelasKey) : null;
+      const opt = el ? [...el.options].find(o=>o.value===k) : null;
       if (opt && opt.textContent) return opt.textContent.trim();
       const custom = window.namaKelasCustom || window.NAMA_KELAS_CUSTOM || {};
-      if (custom[kelasKey]) return String(custom[kelasKey]);
+      if (custom[k]) return String(custom[k]);
       if (typeof _kelasKelompokLineFor === 'function') {
-        return _kelasKelompokLineFor(kelasKey)?.line?.replace(/^Halaqoh:\s*/,'') || kelasKey;
+        return _kelasKelompokLineFor(k)?.line?.replace(/^Halaqoh:\s*/,'') || k;
       }
-      return kelasKey;
+      return k;
     }
 
     // ===== Roster & whitelist
@@ -10965,7 +10983,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const out = [];
       for (const it of j1.list){
         const key = String(it?.key||'').trim();
-        if (!key || !allow.has(key)) continue; // filter berdasar roster
+        if (!key || !allow.has(key)) continue;
         const totalJuz = Number(it?.totalJuz || it?.total_juz_num || 0);
         const s = byNis.get(key) || byId.get(key) || {};
         out.push({
@@ -11110,40 +11128,37 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ======= State untuk refresh
-    let _lastBaseKey = null;
     let _lastStart = null, _lastEnd = null, _lastKelasKeys = null;
 
-    // ======= Compute & render helper (pakai cache atau paksa fresh)
-    async function computeAndRender({ forceFresh = false } = {}){
+    // ======= Compute helper (pakai cache atau paksa fresh)
+    function makeBaseFromInputs(){
       const startDate = _lastStart ?? document.querySelector('#pdf-start-date')?.value;
       const endDate   = _lastEnd   ?? document.querySelector('#pdf-end-date')?.value;
       if (!startDate || !endDate) throw new Error('Mohon pilih tanggal mulai & akhir.');
-
       const kelasKeys = _lastKelasKeys ?? getAllKelasKeysSafe();
       if (!kelasKeys.length) throw new Error('Tidak menemukan daftar kelas.');
-
       const baseKey = makeBaseKey(startDate, endDate, kelasKeys);
-      const mode = 'kelas';
-
-      let payload = !forceFresh ? cacheLoad(baseKey, mode) : null;
-      if (!payload){
-        payload = await computeByKelas(startDate, endDate, kelasKeys);
-        cacheSave(baseKey, mode, payload);
-      }
-      renderView(payload, !forceFresh && !!cacheLoad(baseKey, mode));
-
-      _lastBaseKey = baseKey;
-      _lastStart   = startDate;
-      _lastEnd     = endDate;
-      _lastKelasKeys = kelasKeys;
+      return { baseKey, startDate, endDate, kelasKeys };
     }
 
-    // ======= Click handler + cache-aware (HANYA mode 'kelas')
+    async function computeMaybeCached({ forceFresh = false } = {}){
+      const { baseKey, startDate, endDate, kelasKeys } = makeBaseFromInputs();
+      let payload = !forceFresh ? cacheLoad(baseKey, 'kelas') : null;
+      if (!payload){
+        payload = await computeByKelas(startDate, endDate, kelasKeys);
+        cacheSave(baseKey, 'kelas', payload);
+      }
+      _lastStart = startDate; _lastEnd = endDate; _lastKelasKeys = kelasKeys;
+      return { payload, fromCache: !forceFresh && !!cacheLoad(baseKey, 'kelas') };
+    }
+
+    // ======= Click handler Overlay
     async function openOverlay(){
       btn.disabled = true; btn.textContent = 'Memuat grafik…';
       try{
         ensureOverlay(); await ensureChartJS();
-        await computeAndRender({ forceFresh:false });
+        const { payload, fromCache } = await computeMaybeCached({ forceFresh:false });
+        renderView(payload, fromCache);
 
         // Bind tombol Refresh (sekali saja)
         const refBtn = document.getElementById('thmsRefresh');
@@ -11153,8 +11168,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const prev = refBtn.textContent;
             refBtn.disabled = true; refBtn.textContent = 'Menyegarkan…';
             try{
-              await computeAndRender({ forceFresh:true }); // abaikan cache, tulis ulang
-              document.getElementById('thmsCacheFlag').style.display = 'none'; // hasil fresh
+              const { payload } = await computeMaybeCached({ forceFresh:true });
+              renderView(payload, false);
+              document.getElementById('thmsCacheFlag').style.display = 'none';
             } catch(e){
               console.error(e);
               alert('Gagal menyegarkan data: ' + (e.message||e));
@@ -11167,12 +11183,148 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error(e);
         alert('Gagal menampilkan grafik: ' + (e.message||e));
       } finally {
-        btn.disabled = false; btn.textContent = 'Grafik Prosentase';
+        btn.disabled = false; btn.textContent = 'Live Grafik';
       }
     }
 
-    // buka langsung ke mode 'kelas'
+    // ======= PDF: render chart offscreen + generate PDF
+    function makeHiddenCanvas(){
+      const c = document.createElement('canvas');
+      c.width = 1200; c.height = 360; // resolusi bagus untuk PDF
+      c.className = 'thms-hide';
+      document.body.appendChild(c);
+      return c;
+    }
+    function destroyCanvas(c){ try{ c.remove(); }catch(_){} }
+
+    async function buildChartImage(rows){
+      await ensureChartJS();
+      const labels = rows.map(r=>r.label);
+      const data   = rows.map(r=>Math.round(r.avg));
+      const c = makeHiddenCanvas();
+      const ctx = c.getContext('2d');
+      const chart = new Chart(ctx, {
+        type:'bar',
+        data:{ labels, datasets:[{ label:'Rata-rata THMS (%)', data }] },
+        options:{
+          animation:false, responsive:false, maintainAspectRatio:false,
+          scales:{ y:{ beginAtZero:true, max:100, ticks:{ stepSize:10 } } },
+          plugins:{ legend:{ display:false } }
+        }
+      });
+      // pastikan sudah render
+      await new Promise(r=>requestAnimationFrame(()=>r()));
+      const img = chart.toBase64Image('image/png', 1.0);
+      chart.destroy();
+      destroyCanvas(c);
+      return img;
+    }
+
+    async function downloadPdf(){
+      // tombol state
+      const prev = btnPdf.textContent;
+      btnPdf.disabled = true; btnPdf.textContent = 'Menyusun PDF…';
+      try{
+        await ensureJsPDF();
+        const { jsPDF } = window.jspdf;
+        const { payload, fromCache } = await computeMaybeCached({ forceFresh:false });
+        const { rows, startDate, endDate } = payload;
+
+        // kartu ringkas
+        const totalGroupsShown = rows.length;
+        const totalSantri = rows.reduce((s,r)=>s+r.count,0);
+        const totalKhatam = rows.reduce((s,r)=>s+r.khatam,0);
+        const totalTuntas = rows.reduce((s,r)=>s+r.tuntas,0);
+        const avgGlobal   = rows.length ? Math.round(rows.reduce((s,r)=>s+r.avg,0)/rows.length) : 0;
+
+        const chartImg = await buildChartImage(rows);
+
+        // PDF A4 portrait
+        const doc = new jsPDF({ unit:'pt', format:'a4', compress:true });
+        const pageW = doc.internal.pageSize.getWidth();
+        const margin = 36;
+
+        // Header
+        doc.setFont('helvetica','bold'); doc.setFontSize(14);
+        doc.text('Grafik Prosentase THMS — Per Halaqoh (Ustadz)', margin, 40);
+        doc.setFont('helvetica','normal'); doc.setFontSize(11);
+        const fmt = (window.fmtD_M_YYYY || (x=>x));
+        doc.text(`Periode: ${fmt(startDate)} s.d. ${fmt(endDate)}${fromCache?'  (cache)':''}`, margin, 58);
+
+        // Kartu ringkas (grid 5 kolom)
+        const yCardsTop = 78, hCard = 48, gap = 10, cols = 5;
+        const colW = (pageW - margin*2 - gap*(cols-1)) / cols;
+        const cards = [
+          ['Total Halaqoh', String(totalGroupsShown)],
+          ['Total Santri', String(totalSantri)],
+          ['Rata-rata Global', `${avgGlobal}%`],
+          ['Tuntas', String(totalTuntas)],
+          ['Khatam', String(totalKhatam)],
+        ];
+        doc.setDrawColor(230); doc.setLineWidth(0.8);
+        cards.forEach((c, i)=>{
+          const x = margin + i*(colW+gap);
+          doc.setFillColor(249,250,251); // f9fafb
+          doc.roundedRect(x, yCardsTop, colW, hCard, 6, 6, 'FD');
+          doc.setFontSize(9); doc.setTextColor(107,114,128); // slate-500
+          doc.text(c[0], x+10, yCardsTop+18);
+          doc.setTextColor(17,24,39); doc.setFont('helvetica','bold'); doc.setFontSize(14);
+          doc.text(c[1], x+10, yCardsTop+38);
+          doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0);
+        });
+
+        // Chart image
+        const chartY = yCardsTop + hCard + 18;
+        const chartW = pageW - margin*2;
+        const chartH = 220;
+        doc.addImage(chartImg, 'PNG', margin, chartY, chartW, chartH);
+
+        // Tabel ringkas (nama, % , Santri, Tuntas, Khatam)
+        let y = chartY + chartH + 22;
+        const lineH = 16;
+        function headerRow(){
+          doc.setFont('helvetica','bold'); doc.setFontSize(10);
+          doc.text('Halaqoh', margin, y);
+          doc.text('%', margin+300, y, { align:'right' });
+          doc.text('Santri', margin+360, y, { align:'right' });
+          doc.text('Tuntas', margin+430, y, { align:'right' });
+          doc.text('Khatam', margin+500, y, { align:'right' });
+          doc.setFont('helvetica','normal'); doc.setFontSize(10);
+          y += 6; doc.setDrawColor(230); doc.line(margin, y, pageW - margin, y); y += 10;
+        }
+        headerRow();
+        for (const r of rows){
+          if (y > doc.internal.pageSize.getHeight() - 48){
+            doc.addPage(); y = margin; headerRow();
+          }
+          const pct = Math.round(r.avg);
+          doc.text(String(r.label), margin, y);
+          doc.text(`${pct}%`, margin+300, y, { align:'right' });
+          doc.text(String(r.count), margin+360, y, { align:'right' });
+          doc.text(String(r.tuntas), margin+430, y, { align:'right' });
+          doc.text(String(r.khatam), margin+500, y, { align:'right' });
+          y += lineH;
+        }
+
+        // Footer kecil
+        doc.setFontSize(8); doc.setTextColor(120);
+        doc.text('Generated by Rapor Tahfiz — Grafik Prosentase THMS', margin, doc.internal.pageSize.getHeight()-20);
+
+        // Filename
+        const safe = (s)=>String(s||'').replace(/[^\w\-]+/g,'_');
+        const fname = `GrafikProsentase_THMS_${safe(startDate)}_sd_${safe(endDate)}.pdf`;
+        doc.save(fname);
+      } catch(e){
+        console.error(e);
+        alert('Gagal membuat PDF: ' + (e.message||e));
+      } finally {
+        btnPdf.disabled = false; btnPdf.textContent = prev;
+      }
+    }
+
+    // ====== Bind tombol
     btn.addEventListener('click', openOverlay);
+    btnPdf.addEventListener('click', downloadPdf);
   }
 })();
 </script>
