@@ -6144,7 +6144,7 @@ async function xlsRekapDownload(){
     return out.length ? out.join(', ') : '-';
   }
   function PDF_percentCapaian(totalJuzNum, semester){
-    const batasSemester = {2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
+    const batasSemester = {1: 1, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
     const total = Number(totalJuzNum);
     const sem   = Number(semester);
     if (!Number.isFinite(total)) return 0;
@@ -7014,7 +7014,7 @@ async function hitungTotalAllJuzFromTable() {
       rekap[key].totalJuz += readTotalJuz(item);
     });
 
-    const batasSemester = {2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
+    const batasSemester = {1: 1, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
     const defaultTarget = 30;
 
     const dataToSave = [];
@@ -7161,7 +7161,7 @@ async function hitungTotalAllJuzOtomatis() {
       rekap[key].totalJuz += readTotalJuz(item);
     });
 
-    const batasSemester = {2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
+    const batasSemester = {1: 1, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
     const defaultTarget = 30;
 
     rowsArr.forEach(row => {
@@ -8312,7 +8312,7 @@ if (window.currentRowEl){
     else { s=s.replace(/,/g,""); }
     const n = parseFloat(s); return Number.isFinite(n)?n:0;
   };
-  const BATAS = {1: 1.5, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
+  const BATAS = {1: 1, 2: 4, 3: 7, 4: 10, 5: 13, 6: 15, 7: 17, 8: 20, 9: 23, 10: 26, 11: 29, 12: 30};
   const LS_KEY = k => `murRange:${k}`;
 
   function getSantriTable(){
