@@ -2608,11 +2608,11 @@ background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:cen
 function aturDropdownKelas(user) {
   const semuaKelas = [  "kelas_012025","kelas_022025","kelas_032025","kelas_042025","kelas_052025"];
 
-  const namaKelasCustom = {  kelas_012025: "Ustadzah. Choirunisa Nurlayli",
-  kelas_022025: "Ustadzah. Zatifa Nur Fitri",
-  kelas_032025: "Ustadzah. Hadziqoh",
-  kelas_042025: "Ustadzah. Istiqomah",
-  kelas_052025: "Ustadzah. Maisaroh"};
+  const namaKelasCustom = {  kelas_012025: "Ustadzah Choirunisa Nurlayli",
+  kelas_022025: "Ustadzah Zatifa Nur Fitri",
+  kelas_032025: "Ustadzah Hadziqoh",
+  kelas_042025: "Ustadzah Istiqomah",
+  kelas_052025: "Ustadzah Maisaroh"};
 
   kelasSelect.innerHTML = "";
 
@@ -4629,11 +4629,11 @@ function _isMeaningfulKBM(rec){
   // === Helper Kelas/Kelompok ===
 function buildKelasKelompokLine(kelas, kelasEl) {
   const kelasNum = (String(kelas||'').match(/(\d+)/)?.[1]) || (kelas || '-');
-  const custom = window.namaKelasCustom || window.NAMA_KELAS_CUSTOM || {  kelas_012025: "Ustadzah. Choirunisa Nurlayli",
-  kelas_022025: "Ustadzah. Zatifa Nur Fitri",
-  kelas_032025: "Ustadzah. Hadziqoh",
-  kelas_042025: "Ustadzah. Istiqomah",
-  kelas_052025: "Ustadzah. Maisaroh"};
+  const custom = window.namaKelasCustom || window.NAMA_KELAS_CUSTOM || {  kelas_012025: "Ustadzah Choirunisa Nurlayli",
+  kelas_022025: "Ustadzah Zatifa Nur Fitri",
+  kelas_032025: "Ustadzah Hadziqoh",
+  kelas_042025: "Ustadzah Istiqomah",
+  kelas_052025: "Ustadzah Maisaroh"};
     let kelompok = custom[kelas] || "";
     if (!kelompok) {
       const optText = kelasEl?.options?.[kelasEl.selectedIndex]?.text?.trim() || "";
